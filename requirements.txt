@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+websockets
+sqlalchemy[asyncio]
+asyncpg
+google-api-python-client
+openai
+python-dotenv
+pydantic
