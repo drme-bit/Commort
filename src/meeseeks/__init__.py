@@ -1,19 +1,15 @@
-import os
-
-from dotenv import load_dotenv
-
+from src.config import Settings
 from src.meeseeks.GroqMeeseeks import GroqMeeseeks
 from src.meeseeks.MeeseeksModel import MeeseeksModel
 from src.meeseeks.OpenMeeseeks import OpenMeeseeks
 
 
-def make_meeseeks(provider: str = None) -> MeeseeksModel:
-    load_dotenv()
-    provider = provider or os.getenv("MEESEEKS_PROVIDER", "groq")
+def make_meeseeks(settings: Settings) -> MeeseeksModel:
+    provider = settings.meeseeks_provider
 
     if provider == "groq":
-        return GroqMeeseeks()
+        return GroqMeeseeks(api_key=settings.groq_api_key, model=settings.groq_model)
     if provider == "openrouter":
-        return OpenMeeseeks()
+        return OpenMeeseeks(api_key=settings.openrouter_api_key, model=settings.openrouter_model)
 
     raise ValueError(f"unknown meeseeks provider: {provider}")

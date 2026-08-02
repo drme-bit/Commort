@@ -1,7 +1,4 @@
-import os
 import time
-
-from dotenv import load_dotenv
 
 from openai import OpenAI, RateLimitError
 
@@ -18,14 +15,14 @@ class OpenMeeseeks(MeeseeksModel):
 
     def __init__(
         self,
+        api_key: str,
         model: str = None,
         calls_per_minute: float = 15.0,
     ):
-        load_dotenv()
-        self.model = model or os.getenv("OPENROUTER_MODEL", "inclusionai/ling-3.0-flash:free")
+        self.model = model or "inclusionai/ling-3.0-flash:free"
         self.client = OpenAI(
             base_url="https://openrouter.ai/api/v1",
-            api_key=os.getenv("OPENROUTER_API_KEY"),
+            api_key=api_key,
         )
         self._limiter = RateLimiter(calls_per_minute=calls_per_minute)
 

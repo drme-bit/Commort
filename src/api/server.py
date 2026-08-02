@@ -1,14 +1,12 @@
 import asyncio
 import logging
-import os
 from contextlib import asynccontextmanager
-
-from dotenv import load_dotenv
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 
 from src.api.routes import build_router
 from src.api.ws import WSManager
+from src.config import Settings
 from src.fetcher.CommortAggregator import CommortAggregator
 from src.fetcher.sources.YoutubeSource import YoutubeSource
 from src.meeseeks import make_meeseeks
@@ -20,11 +18,11 @@ logger = logging.getLogger("commort")
 
 
 def create_app() -> FastAPI:
-    load_dotenv()
+    settings = Settings.from_env()
 
-    store = make_store()
-    source = CommortAggregator([YoutubeSource()])
-    meeseeks = make_meeseeks()
+    store = make_store(settings.database_url)
+    source = CommortAggregator([YoutubeSource(api_key=settings.youtube_api_key)])
+    meeseeks = make_meeseeks(settings)
 
     ws = WSManager()
     poll = PollService(
@@ -32,9 +30,9 @@ def create_app() -> FastAPI:
         source=source,
         meeseeks=meeseeks,
         ws=ws,
-        interval_sec=int(os.getenv("COMMORT_POLL_INTERVAL_SEC", "300")),
-        fetch_limit=int(os.getenv("COMMORT_FETCH_LIMIT", "5")),
-        score_batch=int(os.getenv("COMMORT_SCORE_BATCH", "10")),
+        interval_sec=settings.poll_interval_sec,
+        fetch_limit=settings.fetch_limit,
+        score_batch=settings.score_batch,
     )
 
     @asynccontextmanager
@@ -42,7 +40,7 @@ def create_app() -> FastAPI:
         await store.connect()
         task = asyncio.create_task(poll.run_forever())
         app.state.poll_task = task
-        logger.info("commort started, poller every %ss", poll._interval)
+        logger.info("commort started, poller every %ss", settings.poll_interval_sec)
         yield
         task.cancel()
         await store.close()

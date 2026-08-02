@@ -1,7 +1,3 @@
-import os
-
-from dotenv import load_dotenv
-
 from openai import OpenAI
 
 from src.domain.comment import Comment
@@ -17,14 +13,14 @@ class GroqMeeseeks(MeeseeksModel):
 
     def __init__(
         self,
+        api_key: str,
         model: str = None,
         calls_per_minute: float = 15.0,
     ):
-        load_dotenv()
-        self.model = model or os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
+        self.model = model or "llama-3.1-8b-instant"
         self.client = OpenAI(
             base_url="https://api.groq.com/openai/v1",
-            api_key=os.getenv("GROQ_API_KEY"),
+            api_key=api_key,
         )
         self._limiter = RateLimiter(calls_per_minute=calls_per_minute)
 

@@ -1,9 +1,6 @@
 import logging
-import os
 import time
 from datetime import date
-
-from dotenv import load_dotenv
 
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
@@ -19,13 +16,13 @@ class YoutubeSource(CommentFetcher):
 
     def __init__(
         self,
+        api_key: str,
         search_queries: list[str] = None,
         use_trending: bool = True,
         video_cache_ttl: int = 3600,
     ):
-        load_dotenv()
-        self.api_key = os.getenv("YOUTUBE_API_KEY")
-        self.youtube = build("youtube", "v3", developerKey=self.api_key)
+        self.api_key = api_key
+        self.youtube = build("youtube", "v3", developerKey=api_key)
         self.search_queries = search_queries or ["funny fails", "memes compilation"]
         self.use_trending = use_trending
         self._cache: dict[str, tuple[float, list[str]]] = {}
