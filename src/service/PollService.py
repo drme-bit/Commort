@@ -1,9 +1,9 @@
 import asyncio
 import logging
 
-from src.api.ws import WSManager
-from src.fetcher.sources.YoutubeSource import YoutubeSource
+from src.domain.ports import CommentFetcher, CommentStore
 from src.meeseeks.MeeseeksModel import MeeseeksModel
+from src.api.ws import WSManager
 
 logger = logging.getLogger("commort.poll")
 
@@ -11,8 +11,8 @@ logger = logging.getLogger("commort.poll")
 class PollService:
     def __init__(
         self,
-        store,
-        source: YoutubeSource,
+        store: CommentStore,
+        source: CommentFetcher,
         meeseeks: MeeseeksModel,
         ws: WSManager,
         interval_sec: int = 300,
@@ -39,8 +39,8 @@ class PollService:
             verdict = await asyncio.to_thread(self._meeseeks.score, comment)
             await self._store.mark_scored(comment, verdict)
             await self._ws.broadcast("comment_scored", {
-                "comment": comment.__dict__,
-                "verdict": verdict.__dict__,
+                "comment": comment.to_dict(),
+                "verdict": verdict.as_dict(),
             })
             scored += 1
 

@@ -4,9 +4,9 @@ from dotenv import load_dotenv
 
 from openai import OpenAI
 
-from src.fetcher.sources.CommortSourceBase import Comment
+from src.domain.comment import Comment
+from src.domain.verdict import MeeseeksVerdict
 from src.meeseeks.MeeseeksModel import MeeseeksModel
-from src.meeseeks.MeeseeksVerdict import MeeseeksVerdict
 from src.meeseeks.rate_limit import RateLimiter
 
 

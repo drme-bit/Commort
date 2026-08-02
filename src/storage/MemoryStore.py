@@ -1,8 +1,9 @@
 import time
 from dataclasses import dataclass, field
 
-from src.fetcher.sources.CommortSourceBase import Comment
-from src.meeseeks.MeeseeksVerdict import MeeseeksVerdict
+from src.domain.comment import Comment
+from src.domain.scoring import adaptive_score
+from src.domain.verdict import MeeseeksVerdict
 
 
 @dataclass
@@ -61,6 +62,7 @@ class MemoryStore:
             u = users.setdefault(key, {
                 "author_id": c.author_id,
                 "username": c.author,
+                "author_avatar": c.author_avatar,
                 "total_score": 0,
                 "comments_count": 0,
                 "avg_score": 0.0,
@@ -68,17 +70,18 @@ class MemoryStore:
                 "best_reaction": "",
                 "last_seen": None,
             })
-            u["total_score"] += sc.verdict.score
+            u["author_avatar"] = c.author_avatar or u["author_avatar"]
+            u["total_score"] += sc.verdict.humor_score
             u["comments_count"] += 1
             u["last_seen"] = sc.scored_at
-            if sc.verdict.score >= u["best_score"]:
-                u["best_score"] = sc.verdict.score
+            if sc.verdict.humor_score >= u["best_score"]:
+                u["best_score"] = sc.verdict.humor_score
                 u["best_reaction"] = sc.verdict.reaction
 
         rated = [u for u in users.values() if u["comments_count"] > 0]
         for u in rated:
             u["avg_score"] = round(u["total_score"] / u["comments_count"], 2)
-        rated.sort(key=lambda u: (u["avg_score"], u["comments_count"]), reverse=True)
+        rated.sort(key=lambda u: (u["total_score"], u["best_score"]), reverse=True)
         return rated[:limit]
 
     async def get_user(self, key: str) -> dict | None:
@@ -89,9 +92,14 @@ class MemoryStore:
 
     @staticmethod
     def _view(sc: StoredComment) -> dict:
+        verdict = None
+        if sc.verdict:
+            d = sc.verdict.as_dict()
+            d["adaptive_score"] = adaptive_score(sc.comment, sc.verdict)
+            verdict = d
         return {
-            "comment": sc.comment.__dict__,
-            "verdict": sc.verdict.__dict__ if sc.verdict else None,
+            "comment": sc.comment.to_dict(),
+            "verdict": verdict,
             "fetched_at": _iso(sc.fetched_at),
             "scored_at": _iso(sc.scored_at),
         }

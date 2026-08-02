@@ -9,6 +9,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 
 from src.api.routes import build_router
 from src.api.ws import WSManager
+from src.fetcher.CommortAggregator import CommortAggregator
 from src.fetcher.sources.YoutubeSource import YoutubeSource
 from src.meeseeks import make_meeseeks
 from src.service.PollService import PollService
@@ -22,7 +23,7 @@ def create_app() -> FastAPI:
     load_dotenv()
 
     store = make_store()
-    source = YoutubeSource()
+    source = CommortAggregator([YoutubeSource()])
     meeseeks = make_meeseeks()
 
     ws = WSManager()

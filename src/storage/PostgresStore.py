@@ -4,7 +4,6 @@ from sqlalchemy import (
     Index,
     String,
     Text,
-    TextClause,
     desc,
     func,
     select,
@@ -15,8 +14,19 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, aliased, mapped_column
 
-from src.fetcher.sources.CommortSourceBase import Comment
-from src.meeseeks.MeeseeksVerdict import MeeseeksVerdict
+from src.domain.comment import Comment
+from src.domain.scoring import adaptive_score
+from src.domain.verdict import MeeseeksVerdict
+
+MIGRATIONS = [
+    "ALTER TABLE comments ADD COLUMN IF NOT EXISTS funny INTEGER",
+    "ALTER TABLE comments ADD COLUMN IF NOT EXISTS wit INTEGER",
+    "ALTER TABLE comments ADD COLUMN IF NOT EXISTS creativity INTEGER",
+    "ALTER TABLE comments ADD COLUMN IF NOT EXISTS cringe INTEGER",
+    "ALTER TABLE comments ADD COLUMN IF NOT EXISTS intelligence INTEGER",
+    "ALTER TABLE comments ADD COLUMN IF NOT EXISTS adaptive_score INTEGER",
+    "ALTER TABLE comments ADD COLUMN IF NOT EXISTS author_avatar TEXT",
+]
 
 
 class Base(DeclarativeBase):
@@ -39,10 +49,17 @@ class CommentModel(Base):
     score: Mapped[int] = mapped_column(default=0)
     author: Mapped[str] = mapped_column(String)
     author_id: Mapped[str] = mapped_column(String, default="")
+    author_avatar: Mapped[str] = mapped_column(String, default="")
     post_title: Mapped[str] = mapped_column(String, default="")
     post_url: Mapped[str] = mapped_column(String, default="")
     fetched_at: Mapped[datetime] = mapped_column(server_default=func.now())
     meeseeks_score: Mapped[int | None]
+    funny: Mapped[int | None]
+    wit: Mapped[int | None]
+    creativity: Mapped[int | None]
+    cringe: Mapped[int | None]
+    intelligence: Mapped[int | None]
+    adaptive_score: Mapped[int | None]
     reaction: Mapped[str | None]
     scored_at: Mapped[datetime | None]
 
@@ -55,6 +72,7 @@ def _to_comment(m: CommentModel) -> Comment:
         score=m.score,
         author=m.author,
         author_id=m.author_id,
+        author_avatar=m.author_avatar,
         post_title=m.post_title,
         post_url=m.post_url,
     )
@@ -70,6 +88,8 @@ class PostgresStore:
     async def connect(self) -> None:
         async with self._engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
+            for stmt in MIGRATIONS:
+                await conn.execute(text(stmt))
 
     async def close(self) -> None:
         await self._engine.dispose()
@@ -86,6 +106,7 @@ class PostgresStore:
                 "score": c.score,
                 "author": c.author,
                 "author_id": c.author_id,
+                "author_avatar": c.author_avatar,
                 "post_title": c.post_title,
                 "post_url": c.post_url,
             }
@@ -105,7 +126,10 @@ class PostgresStore:
             stmt = insert(CommentModel).values(values)
             stmt = stmt.on_conflict_do_update(
                 index_elements=[CommentModel.id],
-                set_={"score": stmt.excluded.score},
+                set_={
+                    "score": stmt.excluded.score,
+                    "author_avatar": stmt.excluded.author_avatar,
+                },
             )
             await session.execute(stmt)
             await session.commit()
@@ -130,7 +154,13 @@ class PostgresStore:
                 update(CommentModel)
                 .where(CommentModel.id == comment.id)
                 .values(
-                    meeseeks_score=verdict.score,
+                    meeseeks_score=verdict.humor_score,
+                    funny=verdict.funny,
+                    wit=verdict.wit,
+                    creativity=verdict.creativity,
+                    cringe=verdict.cringe,
+                    intelligence=verdict.intelligence,
+                    adaptive_score=adaptive_score(comment, verdict),
                     reaction=verdict.reaction,
                     scored_at=func.now(),
                 )
@@ -151,9 +181,18 @@ class PostgresStore:
     def _comment_view(m: CommentModel) -> dict:
         verdict = None
         if m.meeseeks_score is not None:
-            verdict = {"score": m.meeseeks_score, "reaction": m.reaction}
+            verdict = {
+                "funny": m.funny,
+                "wit": m.wit,
+                "creativity": m.creativity,
+                "cringe": m.cringe,
+                "intelligence": m.intelligence,
+                "score": m.meeseeks_score,
+                "adaptive_score": m.adaptive_score,
+                "reaction": m.reaction,
+            }
         return {
-            "comment": _to_comment(m).__dict__,
+            "comment": _to_comment(m).to_dict(),
             "verdict": verdict,
             "fetched_at": _iso(m.fetched_at),
             "scored_at": _iso(m.scored_at),
@@ -185,6 +224,7 @@ class PostgresStore:
             select(
                 CommentModel.author_id.label("author_id"),
                 CommentModel.author.label("username"),
+                func.max(CommentModel.author_avatar).label("author_avatar"),
                 func.sum(CommentModel.meeseeks_score).label("total_score"),
                 func.count().label("comments_count"),
                 func.round(func.avg(CommentModel.meeseeks_score), 2).label("avg_score"),
@@ -193,7 +233,7 @@ class PostgresStore:
             )
             .where(CommentModel.meeseeks_score.isnot(None))
             .group_by(CommentModel.author_id, CommentModel.author)
-            .order_by(desc("avg_score"), desc("comments_count"))
+            .order_by(desc("total_score"), desc("best_score"))
             .limit(limit)
         )
 
@@ -209,6 +249,7 @@ def _user_view(row) -> dict:
     return {
         "author_id": row["author_id"],
         "username": row["username"],
+        "author_avatar": row["author_avatar"],
         "total_score": int(row["total_score"]),
         "comments_count": int(row["comments_count"]),
         "avg_score": float(row["avg_score"]),
