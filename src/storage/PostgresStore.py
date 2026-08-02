@@ -21,13 +21,11 @@ from src.domain.verdict import MeeseeksVerdict
 from src.service.views import comment_view, user_view
 
 MIGRATIONS = [
-    "ALTER TABLE comments ADD COLUMN IF NOT EXISTS funny INTEGER",
-    "ALTER TABLE comments ADD COLUMN IF NOT EXISTS wit INTEGER",
-    "ALTER TABLE comments ADD COLUMN IF NOT EXISTS creativity INTEGER",
-    "ALTER TABLE comments ADD COLUMN IF NOT EXISTS cringe INTEGER",
-    "ALTER TABLE comments ADD COLUMN IF NOT EXISTS intelligence INTEGER",
-    "ALTER TABLE comments ADD COLUMN IF NOT EXISTS adaptive_score INTEGER",
-    "ALTER TABLE comments ADD COLUMN IF NOT EXISTS author_avatar TEXT",
+    "ALTER TABLE comments DROP COLUMN IF EXISTS funny",
+    "ALTER TABLE comments DROP COLUMN IF EXISTS wit",
+    "ALTER TABLE comments DROP COLUMN IF EXISTS creativity",
+    "ALTER TABLE comments DROP COLUMN IF EXISTS cringe",
+    "ALTER TABLE comments DROP COLUMN IF EXISTS intelligence",
 ]
 
 
@@ -56,11 +54,6 @@ class CommentModel(Base):
     post_url: Mapped[str] = mapped_column(String, default="")
     fetched_at: Mapped[datetime] = mapped_column(server_default=func.now())
     meeseeks_score: Mapped[int | None]
-    funny: Mapped[int | None]
-    wit: Mapped[int | None]
-    creativity: Mapped[int | None]
-    cringe: Mapped[int | None]
-    intelligence: Mapped[int | None]
     adaptive_score: Mapped[int | None]
     reaction: Mapped[str | None]
     scored_at: Mapped[datetime | None]
@@ -82,12 +75,8 @@ def _to_comment(m: CommentModel) -> Comment:
 
 def _to_verdict(m: CommentModel) -> MeeseeksVerdict:
     return MeeseeksVerdict(
-        funny=m.funny or 5,
-        wit=m.wit or 5,
-        creativity=m.creativity or 5,
-        cringe=m.cringe or 5,
-        intelligence=m.intelligence or 5,
-        reaction=m.reaction or "",
+        score=m.meeseeks_score or 4,
+        assessment=m.reaction or "",
     )
 
 
@@ -167,14 +156,9 @@ class PostgresStore(CommentStore):
                 update(CommentModel)
                 .where(CommentModel.id == comment.id)
                 .values(
-                    meeseeks_score=verdict.humor_score,
-                    funny=verdict.funny,
-                    wit=verdict.wit,
-                    creativity=verdict.creativity,
-                    cringe=verdict.cringe,
-                    intelligence=verdict.intelligence,
+                    meeseeks_score=verdict.score,
                     adaptive_score=adaptive_score(comment, verdict),
-                    reaction=verdict.reaction,
+                    reaction=verdict.assessment,
                     scored_at=func.now(),
                 )
             )
@@ -203,7 +187,7 @@ class PostgresStore(CommentStore):
     @staticmethod
     async def _leaderboard_rows(session, limit: int, key: str | None = None):
         c2 = aliased(CommentModel)
-        best_reaction = (
+        best_assessment = (
             select(c2.reaction)
             .where(c2.author_id == CommentModel.author_id)
             .order_by(c2.meeseeks_score.desc(), c2.scored_at.desc())
@@ -221,7 +205,7 @@ class PostgresStore(CommentStore):
                 func.count().label("comments_count"),
                 func.round(func.avg(CommentModel.meeseeks_score), 2).label("avg_score"),
                 func.max(CommentModel.meeseeks_score).label("best_score"),
-                best_reaction.label("best_reaction"),
+                best_assessment.label("best_assessment"),
             )
             .where(CommentModel.meeseeks_score.isnot(None))
             .group_by(CommentModel.author_id, CommentModel.author)

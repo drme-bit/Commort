@@ -1,12 +1,15 @@
 import json
 
+from src.domain.scoring import calibrate_score
 from src.domain.verdict import MeeseeksVerdict
 
 _FALLBACK = MeeseeksVerdict(
-    reaction="Oh, oh jeez, I... I got nothing on this one, man."
+    score=2,
+    assessment="Aw jeez, I... I got nothing on this one, man.",
 )
 _UNPARSEABLE = MeeseeksVerdict(
-    reaction="Aw jeez, I can't even— this is, like, outside my wheelhouse, Rick!"
+    score=2,
+    assessment="Aw jeez, I can't even read that, Rick, it's all, like, garbled.",
 )
 
 
@@ -21,24 +24,13 @@ def parse_verdict(text: str) -> MeeseeksVerdict:
     except json.JSONDecodeError:
         return _UNPARSEABLE
 
-    def num(key: str, default: int) -> int:
-        try:
-            value = int(data.get(key, default))
-            return max(1, min(10, value))
-        except (TypeError, ValueError):
-            return default
+    raw = _number(data.get("score"), 4)
+    assessment = str(data.get("assessment") or data.get("reaction") or "")
+    return MeeseeksVerdict(score=calibrate_score(raw), assessment=assessment)
 
-    reaction = str(data.get("reaction", ""))
-    if "funny" in data:
-        return MeeseeksVerdict(
-            funny=num("funny", 5),
-            wit=num("wit", 5),
-            creativity=num("creativity", 5),
-            cringe=num("cringe", 5),
-            intelligence=num("intelligence", 5),
-            reaction=reaction,
-        )
 
-    # backward-compatible: single "score"
-    score = num("score", 5)
-    return MeeseeksVerdict(funny=score, wit=score, creativity=score, intelligence=score, reaction=reaction)
+def _number(value, default: int) -> int:
+    try:
+        return int(float(value))
+    except (TypeError, ValueError):
+        return default

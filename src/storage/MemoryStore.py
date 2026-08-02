@@ -78,16 +78,16 @@ class MemoryStore(CommentStore):
                 "total_score": 0,
                 "comments_count": 0,
                 "best_score": 0,
-                "best_reaction": "",
+                "best_assessment": "",
                 "last_seen": None,
             })
             u["author_avatar"] = c.author_avatar or u["author_avatar"]
-            u["total_score"] += sc.verdict.humor_score
+            u["total_score"] += sc.verdict.score
             u["comments_count"] += 1
             u["last_seen"] = sc.scored_at
-            if sc.verdict.humor_score >= u["best_score"]:
-                u["best_score"] = sc.verdict.humor_score
-                u["best_reaction"] = sc.verdict.reaction
+            if sc.verdict.score >= u["best_score"]:
+                u["best_score"] = sc.verdict.score
+                u["best_assessment"] = sc.verdict.assessment
         for u in users.values():
             if u["comments_count"]:
                 u["avg_score"] = u["total_score"] / u["comments_count"]

@@ -40,6 +40,6 @@ def user_view(user: dict) -> dict:
         "comments_count": int(user["comments_count"]),
         "avg_score": round(float(user["avg_score"]), 2),
         "best_score": int(user["best_score"]),
-        "best_reaction": user["best_reaction"],
+        "best_assessment": user["best_assessment"],
         "last_seen": user.get("last_seen"),
     }
