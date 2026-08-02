@@ -1,14 +1,14 @@
 import json
 
-from src.domain.scoring import calibrate_score
+from src.domain.scoring import normalize_score
 from src.domain.verdict import MeeseeksVerdict
 
 _FALLBACK = MeeseeksVerdict(
-    score=2,
+    score=1.0,
     assessment="Aw jeez, I... I got nothing on this one, man.",
 )
 _UNPARSEABLE = MeeseeksVerdict(
-    score=2,
+    score=1.0,
     assessment="Aw jeez, I can't even read that, Rick, it's all, like, garbled.",
 )
 
@@ -24,13 +24,13 @@ def parse_verdict(text: str) -> MeeseeksVerdict:
     except json.JSONDecodeError:
         return _UNPARSEABLE
 
-    raw = _number(data.get("score"), 4)
+    raw = _number(data.get("score"), 1.0)
     assessment = str(data.get("assessment") or data.get("reaction") or "")
-    return MeeseeksVerdict(score=calibrate_score(raw), assessment=assessment)
+    return MeeseeksVerdict(score=normalize_score(raw), assessment=assessment)
 
 
-def _number(value, default: int) -> int:
+def _number(value, default: float) -> float:
     try:
-        return int(float(value))
+        return float(value)
     except (TypeError, ValueError):
         return default

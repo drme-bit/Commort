@@ -36,10 +36,10 @@ def user_view(user: dict) -> dict:
         "author_id": user["author_id"],
         "username": user["username"],
         "author_avatar": user["author_avatar"],
-        "total_score": int(user["total_score"]),
+        "total_score": round(float(user["total_score"]), 1),
         "comments_count": int(user["comments_count"]),
         "avg_score": round(float(user["avg_score"]), 2),
-        "best_score": int(user["best_score"]),
+        "best_score": round(float(user["best_score"]), 1),
         "best_assessment": user["best_assessment"],
         "last_seen": user.get("last_seen"),
     }

@@ -21,6 +21,8 @@ from src.domain.verdict import MeeseeksVerdict
 from src.service.views import comment_view, user_view
 
 MIGRATIONS = [
+    "ALTER TABLE comments ALTER COLUMN meeseeks_score TYPE DOUBLE PRECISION",
+    "ALTER TABLE comments ALTER COLUMN adaptive_score TYPE DOUBLE PRECISION",
     "ALTER TABLE comments DROP COLUMN IF EXISTS funny",
     "ALTER TABLE comments DROP COLUMN IF EXISTS wit",
     "ALTER TABLE comments DROP COLUMN IF EXISTS creativity",
@@ -53,8 +55,8 @@ class CommentModel(Base):
     post_title: Mapped[str] = mapped_column(String, default="")
     post_url: Mapped[str] = mapped_column(String, default="")
     fetched_at: Mapped[datetime] = mapped_column(server_default=func.now())
-    meeseeks_score: Mapped[int | None]
-    adaptive_score: Mapped[int | None]
+    meeseeks_score: Mapped[float | None]
+    adaptive_score: Mapped[float | None]
     reaction: Mapped[str | None]
     scored_at: Mapped[datetime | None]
 
@@ -75,7 +77,7 @@ def _to_comment(m: CommentModel) -> Comment:
 
 def _to_verdict(m: CommentModel) -> MeeseeksVerdict:
     return MeeseeksVerdict(
-        score=m.meeseeks_score or 4,
+        score=m.meeseeks_score or 0.0,
         assessment=m.reaction or "",
     )
 

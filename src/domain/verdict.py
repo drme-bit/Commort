@@ -3,7 +3,7 @@ from dataclasses import dataclass
 
 @dataclass
 class MeeseeksVerdict:
-    score: int = 4
+    score: float = 0.0
     assessment: str = ""
 
     def as_dict(self) -> dict:
