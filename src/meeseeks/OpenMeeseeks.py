@@ -8,7 +8,9 @@ from openai import OpenAI, RateLimitError
 from src.domain.comment import Comment
 from src.domain.verdict import MeeseeksVerdict
 from src.meeseeks.MeeseeksModel import MeeseeksModel
+from src.meeseeks.prompt import build_prompt
 from src.meeseeks.rate_limit import RateLimiter
+from src.meeseeks.verdict_parser import parse_verdict
 
 
 class OpenMeeseeks(MeeseeksModel):
@@ -28,9 +30,9 @@ class OpenMeeseeks(MeeseeksModel):
         self._limiter = RateLimiter(calls_per_minute=calls_per_minute)
 
     def score(self, comment: Comment) -> MeeseeksVerdict:
-        prompt = self._build_prompt(comment)
+        prompt = build_prompt(comment)
         response = self._create(prompt)
-        return self.parse_verdict(response.choices[0].message.content)
+        return parse_verdict(response.choices[0].message.content)
 
     def _create(self, prompt: str):
         self._limiter.wait()
