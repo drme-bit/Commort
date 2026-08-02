@@ -2,8 +2,9 @@ import time
 from dataclasses import dataclass, field
 
 from src.domain.comment import Comment
-from src.domain.scoring import adaptive_score
+from src.domain.ports import CommentStore
 from src.domain.verdict import MeeseeksVerdict
+from src.service.views import comment_view, user_view
 
 
 @dataclass
@@ -14,7 +15,7 @@ class StoredComment:
     scored_at: float | None = None
 
 
-class MemoryStore:
+class MemoryStore(CommentStore):
     def __init__(self):
         self._comments: dict[str, StoredComment] = {}
 
@@ -50,9 +51,20 @@ class MemoryStore:
     async def list_comments(self, limit: int = 20, scored_only: bool = False) -> list[dict]:
         items = [sc for sc in self._comments.values() if not scored_only or sc.verdict]
         items.sort(key=lambda sc: sc.scored_at or sc.fetched_at, reverse=True)
-        return [self._view(sc) for sc in items[:limit]]
+        return [comment_view(sc.comment, sc.verdict, sc.fetched_at, sc.scored_at) for sc in items[:limit]]
 
     async def leaderboard(self, limit: int = 10) -> list[dict]:
+        rated = [u for u in self._aggregate_users().values() if u["comments_count"] > 0]
+        rated.sort(key=lambda u: (u["total_score"], u["best_score"]), reverse=True)
+        return [user_view(u) for u in rated[:limit]]
+
+    async def get_user(self, key: str) -> dict | None:
+        for u in self._aggregate_users().values():
+            if u["author_id"] == key or u["username"] == key:
+                return user_view(u)
+        return None
+
+    def _aggregate_users(self) -> dict[str, dict]:
         users: dict[str, dict] = {}
         for sc in self._comments.values():
             if sc.verdict is None:
@@ -65,7 +77,6 @@ class MemoryStore:
                 "author_avatar": c.author_avatar,
                 "total_score": 0,
                 "comments_count": 0,
-                "avg_score": 0.0,
                 "best_score": 0,
                 "best_reaction": "",
                 "last_seen": None,
@@ -77,37 +88,7 @@ class MemoryStore:
             if sc.verdict.humor_score >= u["best_score"]:
                 u["best_score"] = sc.verdict.humor_score
                 u["best_reaction"] = sc.verdict.reaction
-
-        rated = [u for u in users.values() if u["comments_count"] > 0]
-        for u in rated:
-            u["avg_score"] = round(u["total_score"] / u["comments_count"], 2)
-        rated.sort(key=lambda u: (u["total_score"], u["best_score"]), reverse=True)
-        return rated[:limit]
-
-    async def get_user(self, key: str) -> dict | None:
-        for u in await self.leaderboard(limit=10**6):
-            if u["author_id"] == key or u["username"] == key:
-                return u
-        return None
-
-    @staticmethod
-    def _view(sc: StoredComment) -> dict:
-        verdict = None
-        if sc.verdict:
-            d = sc.verdict.as_dict()
-            d["adaptive_score"] = adaptive_score(sc.comment, sc.verdict)
-            verdict = d
-        return {
-            "comment": sc.comment.to_dict(),
-            "verdict": verdict,
-            "fetched_at": _iso(sc.fetched_at),
-            "scored_at": _iso(sc.scored_at),
-        }
-
-
-def _iso(timestamp: float | None) -> str | None:
-    if timestamp is None:
-        return None
-    from datetime import datetime, timezone
-
-    return datetime.fromtimestamp(timestamp, tz=timezone.utc).isoformat()
+        for u in users.values():
+            if u["comments_count"]:
+                u["avg_score"] = u["total_score"] / u["comments_count"]
+        return users

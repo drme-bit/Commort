@@ -1,9 +1,8 @@
 import asyncio
 import logging
 
-from src.domain.ports import CommentFetcher, CommentStore
+from src.domain.ports import Broadcaster, CommentFetcher, CommentStore
 from src.meeseeks.MeeseeksModel import MeeseeksModel
-from src.api.ws import WSManager
 
 logger = logging.getLogger("commort.poll")
 
@@ -14,7 +13,7 @@ class PollService:
         store: CommentStore,
         source: CommentFetcher,
         meeseeks: MeeseeksModel,
-        ws: WSManager,
+        ws: Broadcaster,
         interval_sec: int = 300,
         fetch_limit: int = 5,
         score_batch: int = 10,

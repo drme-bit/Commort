@@ -4,8 +4,10 @@ from dataclasses import asdict, is_dataclass
 
 from fastapi import WebSocket
 
+from src.domain.ports import Broadcaster
 
-class WSManager:
+
+class WSManager(Broadcaster):
     def __init__(self):
         self._connections: set[WebSocket] = set()
         self._lock = asyncio.Lock()

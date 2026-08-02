@@ -1,10 +1,11 @@
 from fastapi import APIRouter, HTTPException, Query
 
 from src.api.ws import WSManager
+from src.domain.ports import CommentStore
 from src.service.PollService import PollService
 
 
-def build_router(store, poll: PollService, ws: WSManager) -> APIRouter:
+def build_router(store: CommentStore, poll: PollService, ws: WSManager) -> APIRouter:
     router = APIRouter(prefix="/api")
 
     @router.get("/health")

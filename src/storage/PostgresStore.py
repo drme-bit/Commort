@@ -15,8 +15,10 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, aliased, mapped_column
 
 from src.domain.comment import Comment
+from src.domain.ports import CommentStore
 from src.domain.scoring import adaptive_score
 from src.domain.verdict import MeeseeksVerdict
+from src.service.views import comment_view, user_view
 
 MIGRATIONS = [
     "ALTER TABLE comments ADD COLUMN IF NOT EXISTS funny INTEGER",
@@ -78,7 +80,18 @@ def _to_comment(m: CommentModel) -> Comment:
     )
 
 
-class PostgresStore:
+def _to_verdict(m: CommentModel) -> MeeseeksVerdict:
+    return MeeseeksVerdict(
+        funny=m.funny or 5,
+        wit=m.wit or 5,
+        creativity=m.creativity or 5,
+        cringe=m.cringe or 5,
+        intelligence=m.intelligence or 5,
+        reaction=m.reaction or "",
+    )
+
+
+class PostgresStore(CommentStore):
     def __init__(self, dsn: str):
         if dsn.startswith("postgresql://"):
             dsn = dsn.replace("postgresql://", "postgresql+asyncpg://", 1)
@@ -175,38 +188,17 @@ class PostgresStore:
 
         async with self._session_factory() as session:
             models = (await session.execute(stmt)).scalars().all()
-            return [self._comment_view(m) for m in models]
-
-    @staticmethod
-    def _comment_view(m: CommentModel) -> dict:
-        verdict = None
-        if m.meeseeks_score is not None:
-            verdict = {
-                "funny": m.funny,
-                "wit": m.wit,
-                "creativity": m.creativity,
-                "cringe": m.cringe,
-                "intelligence": m.intelligence,
-                "score": m.meeseeks_score,
-                "adaptive_score": m.adaptive_score,
-                "reaction": m.reaction,
-            }
-        return {
-            "comment": _to_comment(m).to_dict(),
-            "verdict": verdict,
-            "fetched_at": _iso(m.fetched_at),
-            "scored_at": _iso(m.scored_at),
-        }
+            return [comment_view(_to_comment(m), _to_verdict(m) if m.meeseeks_score is not None else None, m.fetched_at, m.scored_at) for m in models]
 
     async def leaderboard(self, limit: int = 10) -> list[dict]:
         async with self._session_factory() as session:
             rows = await self._leaderboard_rows(session, limit=limit)
-            return [_user_view(r) for r in rows]
+            return [user_view(dict(r)) for r in rows]
 
     async def get_user(self, key: str) -> dict | None:
         async with self._session_factory() as session:
             rows = await self._leaderboard_rows(session, limit=1, key=key)
-            return _user_view(rows[0]) if rows else None
+            return user_view(dict(rows[0])) if rows else None
 
     @staticmethod
     async def _leaderboard_rows(session, limit: int, key: str | None = None):
@@ -243,23 +235,3 @@ class PostgresStore:
             )
         result = await session.execute(stmt)
         return result.mappings().all()
-
-
-def _user_view(row) -> dict:
-    return {
-        "author_id": row["author_id"],
-        "username": row["username"],
-        "author_avatar": row["author_avatar"],
-        "total_score": int(row["total_score"]),
-        "comments_count": int(row["comments_count"]),
-        "avg_score": float(row["avg_score"]),
-        "best_score": int(row["best_score"]),
-        "best_reaction": row["best_reaction"],
-        "last_seen": None,
-    }
-
-
-def _iso(value: datetime | None) -> str | None:
-    if value is None:
-        return None
-    return value.astimezone().isoformat() if value.tzinfo else value.isoformat()
