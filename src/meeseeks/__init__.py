@@ -1,7 +1,7 @@
 from src.config import Settings
-from src.meeseeks.GroqMeeseeks import GroqMeeseeks
+from src.meeseeks.Models.GroqMeeseeks import GroqMeeseeks
 from src.meeseeks.MeeseeksModel import MeeseeksModel
-from src.meeseeks.OpenMeeseeks import OpenMeeseeks
+from src.meeseeks.Models.OpenMeeseeks import OpenMeeseeks
 
 
 def make_meeseeks(settings: Settings) -> MeeseeksModel:
