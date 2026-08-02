@@ -21,6 +21,8 @@ from src.domain.verdict import MeeseeksVerdict
 from src.service.views import comment_view, user_view
 
 MIGRATIONS = [
+    "ALTER TABLE comments ADD COLUMN IF NOT EXISTS author_avatar VARCHAR",
+    "ALTER TABLE comments ADD COLUMN IF NOT EXISTS adaptive_score DOUBLE PRECISION",
     "ALTER TABLE comments ALTER COLUMN meeseeks_score TYPE DOUBLE PRECISION",
     "ALTER TABLE comments ALTER COLUMN adaptive_score TYPE DOUBLE PRECISION",
     "ALTER TABLE comments DROP COLUMN IF EXISTS funny",

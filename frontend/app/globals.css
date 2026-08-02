@@ -223,6 +223,225 @@ code {
   white-space: nowrap;
 }
 
+/* ---------- hero ---------- */
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 48px;
+  align-items: center;
+  padding: 16px 0 56px;
+}
+
+.hero-copy {
+  display: flex;
+  flex-direction: column;
+}
+
+.hero-morty {
+  position: relative;
+  width: 130px;
+  height: 130px;
+  margin-bottom: 30px;
+}
+
+.hero-morty__ring {
+  position: absolute;
+  inset: -16px;
+  border-radius: 50%;
+  border: 2px dashed var(--portal);
+  box-shadow: 0 0 32px var(--portal-glow);
+  animation: spin 8s linear infinite;
+}
+
+.hero-morty__avatar {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: morty-bob 3.4s ease-in-out infinite;
+  filter: drop-shadow(0 0 22px rgba(78, 225, 255, 0.35));
+}
+
+@keyframes morty-bob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-3deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(3deg);
+  }
+}
+
+.hero-title {
+  font-family: var(--font-bangers);
+  font-size: 54px;
+  line-height: 1.02;
+  letter-spacing: 0.02em;
+  margin: 0 0 14px;
+  text-shadow: 0 0 30px rgba(78, 225, 255, 0.2);
+}
+
+.hero-title em {
+  font-style: normal;
+  color: var(--portal);
+  text-shadow: 0 0 24px var(--portal-glow);
+}
+
+.hero-sub {
+  color: var(--muted);
+  font-size: 15px;
+  max-width: 420px;
+  margin: 0;
+}
+
+/* hero ticker */
+.hero-ticker {
+  position: relative;
+  border: 1px solid var(--border-hi);
+  border-radius: 18px;
+  background: var(--surface);
+  backdrop-filter: blur(8px);
+  padding: 22px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
+}
+
+.hero-comments {
+  min-height: 190px;
+}
+
+.hero-comment {
+  display: none;
+}
+
+.hero-comment--active {
+  display: block;
+  animation: hero-swap 0.5s ease both;
+}
+
+@keyframes hero-swap {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero-comment__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.hero-comment__author {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.hero-comment__meta {
+  flex: 1;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: right;
+}
+
+.hero-comment__text {
+  font-size: 16px;
+  line-height: 1.5;
+  margin: 0 0 16px;
+}
+
+.hero-comment__morty {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border: 1px solid var(--border-hi);
+  border-radius: var(--radius);
+  background: rgba(198, 255, 74, 0.05);
+}
+
+.hero-comment__morty-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.hero-comment__morty-name {
+  font-family: var(--font-bangers);
+  font-size: 14px;
+  color: var(--portal);
+  letter-spacing: 0.05em;
+}
+
+.hero-comment__morty-text {
+  margin: 2px 0 0;
+  font-style: italic;
+  font-size: 14px;
+}
+
+.hero-comment__morty .score-pill {
+  align-self: center;
+  flex-shrink: 0;
+}
+
+.hero-dots {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+.hero-dot {
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.hero-dot:hover {
+  border-color: var(--portal);
+}
+
+.hero-dot--active {
+  background: var(--portal);
+  border-color: var(--portal);
+  box-shadow: 0 0 10px var(--portal-glow);
+}
+
+.hero-ticker__empty {
+  min-height: 190px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-align: center;
+}
+
+@media (max-width: 860px) {
+  .hero {
+    grid-template-columns: 1fr;
+    gap: 34px;
+    padding-top: 8px;
+  }
+  .hero-title {
+    font-size: 42px;
+  }
+}
+
 /* ---------- card + rows ---------- */
 .card {
   border: 1px solid var(--border);
@@ -321,19 +540,103 @@ code {
 
 /* ---------- comments ---------- */
 .comment-card {
-  align-items: flex-start;
+  padding: 18px 20px;
+  transition: background 0.15s;
+}
+
+.comment-card + .comment-card {
+  border-top: 1px solid var(--border);
+}
+
+.comment-card:hover {
+  background: var(--surface-2);
+}
+
+/* post preview */
+.comment-post {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  margin-bottom: 14px;
+  background: rgba(6, 9, 15, 0.35);
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
+
+.comment-post:hover {
+  border-color: var(--border-hi);
+}
+
+.comment-post__thumb {
+  flex-shrink: 0;
+  width: 120px;
+  height: 68px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--surface-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.comment-post__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.comment-post__thumb--fallback {
+  font-family: var(--font-bangers);
+  font-size: 22px;
+  color: var(--portal);
+}
+
+.comment-post__body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.comment-post__label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.comment-post__title {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.comment-post:hover .comment-post__title {
+  color: var(--cyan);
 }
 
 .comment-head {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 10px;
-  flex-wrap: wrap;
+}
+
+.comment-user {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .comment-author {
   font-weight: 600;
-  font-size: 13px;
+  font-size: 13.5px;
 }
 
 .comment-meta {
@@ -341,13 +644,9 @@ code {
   font-size: 12px;
 }
 
-.comment-meta a:hover {
-  color: var(--cyan);
-}
-
 .comment-text {
   font-size: 15px;
-  margin: 6px 0 12px;
+  margin: 10px 0 14px;
 }
 
 .morty {

@@ -1,27 +1,27 @@
 import { api } from "@/lib/api";
 import PageHead from "@/app/components/page-head";
 import Stagger from "@/app/components/stagger";
-import CommentCard from "@/app/components/comment-card";
+import LeaderRow from "@/app/components/leader-row";
 import { Offline, Empty } from "@/app/components/state";
 
 export const dynamic = "force-dynamic";
 
-export default async function CommentsPage() {
-  const { data, error } = await api.comments(50);
+export default async function LeaderboardPage() {
+  const { data, error } = await api.leaderboard(25);
 
   return (
     <section>
       <PageHead
-        title="Comments"
-        sub="What Morty has to say about the internet today."
-        badge={data ? `${data.length} scored` : undefined}
+        title="Leaderboard"
+        sub="YouTube commenters, ranked by how much Morty liked them."
+        badge={data ? `${data.length} users` : undefined}
       />
       {error ? (
         <Offline baseUrl={api.baseUrl()} error={error} />
       ) : data && data.length > 0 ? (
         <Stagger className="card">
-          {data.map((item) => (
-            <CommentCard key={item.comment.id} item={item} />
+          {data.map((user, i) => (
+            <LeaderRow key={user.author_id} user={user} rank={i + 1} />
           ))}
         </Stagger>
       ) : (

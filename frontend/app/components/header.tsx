@@ -4,8 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const links = [
-  { href: "/", label: "Leaderboard" },
-  { href: "/comments", label: "Comments" },
+  { href: "/", label: "Latest" },
+  { href: "/leaderboard", label: "Leaderboard" },
 ];
 
 export default function Header() {

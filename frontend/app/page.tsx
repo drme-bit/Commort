@@ -1,27 +1,31 @@
 import { api } from "@/lib/api";
+import Hero from "@/app/components/hero";
 import PageHead from "@/app/components/page-head";
 import Stagger from "@/app/components/stagger";
-import LeaderRow from "@/app/components/leader-row";
+import CommentCard from "@/app/components/comment-card";
 import { Offline, Empty } from "@/app/components/state";
 
 export const dynamic = "force-dynamic";
 
-export default async function LeaderboardPage() {
-  const { data, error } = await api.leaderboard(25);
+export default async function HomePage() {
+  const { data, error } = await api.comments(30);
 
   return (
     <section>
+      <Hero comments={data?.slice(0, 6) ?? []} error={error} />
+
       <PageHead
-        title="Leaderboard"
-        sub="YouTube commenters, ranked by how much Morty liked them."
-        badge={data ? `${data.length} users` : undefined}
+        title="Latest comments"
+        sub="What Morty just watched and judged."
+        badge={data ? `${data.length} scored` : undefined}
       />
+
       {error ? (
         <Offline baseUrl={api.baseUrl()} error={error} />
       ) : data && data.length > 0 ? (
         <Stagger className="card">
-          {data.map((user, i) => (
-            <LeaderRow key={user.author_id} user={user} rank={i + 1} />
+          {data.map((item) => (
+            <CommentCard key={item.comment.id} item={item} />
           ))}
         </Stagger>
       ) : (
