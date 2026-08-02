@@ -1,14 +1,13 @@
-from src.fetcher.sources.CommortSourceBase import CommortSource, Comment
+from src.domain.comment import Comment
+from src.domain.ports import CommentFetcher
 
-class CommortAgregator:
-    def __init__(self, sources: list[CommortSource]):
+
+class CommortAggregator:
+    def __init__(self, sources: list[CommentFetcher]):
         self.sources = sources
 
-    def fetch_all(self) -> list[Comment]:
-        comments = []
+    def fetch(self, limit: int = 20) -> list[Comment]:
+        comments: list[Comment] = []
         for source in self.sources:
-            comments += source.fetch()
+            comments += source.fetch(limit)
         return comments
-
-    def fetch_by_source(self, source: str) -> list[Comment]:
-        return [c for c in self.fetch_all() if c.source == source]
